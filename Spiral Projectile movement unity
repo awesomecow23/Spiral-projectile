@@ -1,0 +1,93 @@
+using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+
+public class Flank_Projectile : MonoBehaviour
+{
+    public float speed = 3f;
+    public float rotationSpeed = 200;
+    private Rigidbody2D rb;
+    public GameObject player;
+    float SpeedMultiple;
+    float velocityCheck = 1;
+
+    float spiralAngle;
+    int spriralSide;
+
+    private int[] spiralDirectionArray = { 1, -1 };
+
+    void Start()
+    {
+        SpeedMultiple = Random.Range(0.2f, 0.4f);
+
+
+        int randomDirection = Random.Range(0, spiralDirectionArray.Length);
+        spriralSide = spiralDirectionArray[randomDirection];
+        spiralAngle = Random.Range(40, 60);
+
+        rb = this.GetComponent<Rigidbody2D>();
+
+        
+    }
+
+
+    void Update()
+    {
+        //Magnitude of distance between player and projectile      
+        float distance = (player.transform.position - this.transform.position).magnitude;
+
+        //moves in a sprial if distance from player is greater than 2
+        if (distance > 2)
+        {
+            Vector3 direction = player.transform.position - transform.position;            
+            direction = Quaternion.Euler(0, 0, spiralAngle * spriralSide) * direction;
+
+            //Rotates towards direction of movement
+            Vector2 direction2d = new Vector2(transform.position.x, transform.position.y);
+            Quaternion toRotation = Quaternion.LookRotation(Vector3.forward, direction2d);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, toRotation, 10000 * Time.deltaTime);
+
+            float distanceThisFrame = speed * Time.deltaTime;
+            transform.Translate(direction.normalized * distanceThisFrame, Space.World);
+            this.gameObject.transform.Rotate(0.0f, 0.0f, 0.1f);
+
+            
+        }
+        //moves in a straight line if distance from player is greater than 2
+        else
+        {
+            float x = transform.position.x;
+            float y = transform.position.y;
+            float angle = Mathf.Atan2(y, x) * Mathf.Rad2Deg;                        
+            float Xspeed = -x * SpeedMultiple;
+            float Yspeed = -y * SpeedMultiple;
+
+            Vector2 direction2d = new Vector2(player.transform.position.x - transform.position.x, player.transform.position.y - transform.position.y);
+            direction2d = direction2d.normalized;
+            Quaternion toRotation = Quaternion.LookRotation(Vector3.forward, direction2d);
+            transform.rotation = Quaternion.RotateTowards(transform.rotation, toRotation, rotationSpeed * Time.deltaTime);
+
+            if (velocityCheck == 1)
+            {
+                
+                rb.velocity = new Vector2(Xspeed, Yspeed);
+                velocityCheck = 2;
+            }
+            
+        }
+    }
+
+    void OnTriggerEnter2D(Collider2D collision)
+    {
+        if (collision.gameObject.tag == "Forcefield")
+        {
+            Score.scoreValue += 1;
+            Destroy(this.gameObject);
+        }
+        if (collision.gameObject.tag == "DefensePoint")
+        {
+            LivesScript.livesValue -= 1;
+            Destroy(this.gameObject);
+        }
+    }
+}
